@@ -1,0 +1,269 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Stopwatch {
+    JFrame frame;
+    Timer timer;
+    int elapsedTime = 0, seconds = 0, minutes = 0, hours = 0;
+    boolean running = false;
+    JLabel timeLabel;
+    float borderWidth = 1f;
+    float borderHeight = 30f;
+    boolean increaseBorder = true;
+
+    Color backgroundStart = new Color(255, 204, 128);
+    Color backgroundEnd = new Color(255, 94, 98);
+    Font currentFont = new Font("Arial", Font.BOLD, 50);
+    Color fontColor = Color.WHITE;
+
+    public Stopwatch() {
+        frame = new JFrame("Stopwatch");
+        frame.setSize(520, 420);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
+        frame.setResizable(false);
+
+        SunsetPanel panel = new SunsetPanel();
+        frame.setContentPane(panel);
+        frame.setVisible(true);
+    }
+
+    class SunsetPanel extends JPanel {
+        JButton startBtn, stopBtn, resetBtn, settingsBtn;
+
+        public SunsetPanel() {
+            setLayout(null);
+
+            timeLabel = new JLabel("00:00:00", SwingConstants.CENTER) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(fontColor);
+                    g2.setStroke(new BasicStroke(borderWidth));
+                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, (int) borderHeight, (int) borderHeight);
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+            };
+            timeLabel.setFont(currentFont);
+            timeLabel.setForeground(fontColor);
+            timeLabel.setBounds(80, 80, 360, 80);
+            add(timeLabel);
+
+            Timer borderTimer = new Timer(50, e -> {
+                if (increaseBorder) {
+                    borderWidth += 0.3f;
+                    borderHeight -= 0.5f;
+                    if (borderWidth >= 6f) increaseBorder = false;
+                } else {
+                    borderWidth -= 0.3f;
+                    borderHeight += 0.5f;
+                    if (borderWidth <= 1f) increaseBorder = true;
+                }
+                timeLabel.repaint();
+            });
+            borderTimer.start();
+
+            int buttonY = 260;
+            int buttonWidth = 110;
+            int buttonHeight = 50;
+            int spacing = 10;
+            int startX = 20;
+
+            startBtn = createButton("Start", new Color(255, 94, 98));
+            startBtn.setBounds(startX, buttonY, buttonWidth, buttonHeight);
+            add(startBtn);
+
+            stopBtn = createButton("Stop", new Color(255, 159, 67));
+            stopBtn.setBounds(startX + (buttonWidth + spacing), buttonY, buttonWidth, buttonHeight);
+            add(stopBtn);
+
+            resetBtn = createButton("Reset", new Color(255, 195, 113));
+            resetBtn.setBounds(startX + 2 * (buttonWidth + spacing), buttonY, buttonWidth, buttonHeight);
+            add(resetBtn);
+
+            settingsBtn = createButton("Settings", new Color(130, 88, 159));
+            settingsBtn.setBounds(startX + 3 * (buttonWidth + spacing), buttonY, buttonWidth, buttonHeight);
+            add(settingsBtn);
+
+            timer = new Timer(1000, e -> {
+                elapsedTime += 1000;
+                hours = elapsedTime / 3600000;
+                minutes = (elapsedTime / 60000) % 60;
+                seconds = (elapsedTime / 1000) % 60;
+                timeLabel.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+            });
+
+            startBtn.addActionListener(e -> {
+                if (!running) {
+                    timer.start();
+                    running = true;
+                }
+            });
+
+            stopBtn.addActionListener(e -> {
+                if (running) {
+                    timer.stop();
+                    running = false;
+                }
+            });
+
+            resetBtn.addActionListener(e -> {
+                timer.stop();
+                elapsedTime = 0;
+                running = false;
+                timeLabel.setText("00:00:00");
+            });
+
+            settingsBtn.addActionListener(e -> showSettings());
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g;
+            GradientPaint gp = new GradientPaint(0, 0, backgroundStart, getWidth(), getHeight(), backgroundEnd);
+            g2.setPaint(gp);
+            g2.fillRect(0, 0, getWidth(), getHeight());
+        }
+
+        private JButton createButton(String text, Color color) {
+            JButton button = new JButton(text) {
+                @Override
+                protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setPaint(new GradientPaint(0, 0, color.brighter(), 0, getHeight(), color.darker()));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                    super.paintComponent(g);
+                    g2.dispose();
+                }
+            };
+            button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            button.setForeground(Color.WHITE);
+            button.setFocusPainted(false);
+            button.setContentAreaFilled(false);
+            button.setBorderPainted(false);
+            return button;
+        }
+
+        private void showSettings() {
+            JPanel settingsPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+            settingsPanel.setBorder(BorderFactory.createTitledBorder("Customize Your Stopwatch"));
+            settingsPanel.setBackground(new Color(240, 240, 255));
+            settingsPanel.setPreferredSize(new Dimension(460, 260));
+
+            String[] fonts = {"Arial", "Times New Roman", "Comic Sans MS"};
+            JComboBox<String> fontBox = new JComboBox<>(fonts);
+            fontBox.setSelectedItem(currentFont.getFamily());
+            fontBox.setPreferredSize(new Dimension(100, 25));
+
+            JComboBox<Integer> sizeBox = new JComboBox<>(new Integer[]{30, 40, 50, 60, 70});
+            sizeBox.setSelectedItem(currentFont.getSize());
+            sizeBox.setPreferredSize(new Dimension(100, 25));
+
+            JComboBox<String> colorBox = new JComboBox<>(new String[]{"Black", "White", "Gray", "Cyan"});
+            colorBox.setPreferredSize(new Dimension(100, 25));
+
+            JComboBox<String> themeBox = new JComboBox<>(new String[]{
+                "Sunset", "Ocean Blue", "Mint Green", "Lavender Dream",
+                "Night Mode", "Royal Purple", "Autumn Fire",
+                "Spring Blossom", "Neon Glow", "Skyline", "Deep Space"
+            });
+            themeBox.setPreferredSize(new Dimension(100, 25));
+
+            settingsPanel.add(new JLabel("  Font:"));
+            settingsPanel.add(fontBox);
+
+            settingsPanel.add(new JLabel("  Font Size:"));
+            settingsPanel.add(sizeBox);
+
+            settingsPanel.add(new JLabel("  Font Color:"));
+            settingsPanel.add(colorBox);
+
+            settingsPanel.add(new JLabel("  Theme:"));
+            settingsPanel.add(themeBox);
+
+            fontBox.addActionListener(e -> updateSettings(fontBox, sizeBox, colorBox, themeBox));
+            sizeBox.addActionListener(e -> updateSettings(fontBox, sizeBox, colorBox, themeBox));
+            colorBox.addActionListener(e -> updateSettings(fontBox, sizeBox, colorBox, themeBox));
+            themeBox.addActionListener(e -> updateSettings(fontBox, sizeBox, colorBox, themeBox));
+
+            JFrame settingsFrame = new JFrame("Settings");
+            settingsFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            settingsFrame.setSize(550, 350);
+            settingsFrame.setLocationRelativeTo(frame);
+            settingsFrame.setResizable(false);
+
+            settingsFrame.add(settingsPanel);
+            settingsFrame.setVisible(true);
+        }
+
+        private void updateSettings(JComboBox<String> fontBox, JComboBox<Integer> sizeBox, JComboBox<String> colorBox, JComboBox<String> themeBox) {
+            currentFont = new Font((String) fontBox.getSelectedItem(), Font.BOLD, (int) sizeBox.getSelectedItem());
+            timeLabel.setFont(currentFont);
+
+            switch ((String) colorBox.getSelectedItem()) {
+                case "Black" -> fontColor = Color.BLACK;
+                case "White" -> fontColor = Color.WHITE;
+                case "Gray" -> fontColor = Color.GRAY;
+                case "Cyan" -> fontColor = Color.CYAN;
+            }
+            timeLabel.setForeground(fontColor);
+
+            switch ((String) themeBox.getSelectedItem()) {
+                case "Sunset" -> {
+                    backgroundStart = new Color(255, 204, 128);
+                    backgroundEnd = new Color(255, 94, 98);
+                }
+                case "Ocean Blue" -> {
+                    backgroundStart = new Color(100, 149, 237);
+                    backgroundEnd = new Color(25, 25, 112);
+                }
+                case "Mint Green" -> {
+                    backgroundStart = new Color(152, 251, 152);
+                    backgroundEnd = new Color(0, 128, 128);
+                }
+                case "Lavender Dream" -> {
+                    backgroundStart = new Color(230, 230, 250);
+                    backgroundEnd = new Color(186, 85, 211);
+                }
+                case "Night Mode" -> {
+                    backgroundStart = Color.DARK_GRAY;
+                    backgroundEnd = Color.BLACK;
+                }
+                case "Royal Purple" -> {
+                    backgroundStart = new Color(153, 102, 204);
+                    backgroundEnd = new Color(51, 0, 102);
+                }
+                case "Autumn Fire" -> {
+                    backgroundStart = new Color(255, 153, 51);
+                    backgroundEnd = new Color(204, 51, 0);
+                }
+                case "Spring Blossom" -> {
+                    backgroundStart = new Color(255, 192, 203);
+                    backgroundEnd = new Color(255, 105, 180);
+                }
+                case "Neon Glow" -> {
+                    backgroundStart = new Color(57, 255, 20);
+                    backgroundEnd = new Color(0, 191, 255);
+                }
+                case "Skyline" -> {
+                    backgroundStart = new Color(135, 206, 250);
+                    backgroundEnd = new Color(25, 25, 112);
+                }
+                case "Deep Space" -> {
+                    backgroundStart = new Color(10, 10, 25);
+                    backgroundEnd = new Color(55, 0, 60);
+                }
+            }
+            repaint();
+        }
+    }
+
+    public static void main(String[] args) {
+        new Stopwatch();
+    }
+}
